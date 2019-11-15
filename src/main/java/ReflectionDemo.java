@@ -1,0 +1,90 @@
+import entity.Human;
+import entity.HumanAnnotation;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
+public class ReflectionDemo {
+    public static void main(String[] args) throws IllegalAccessException, NoSuchFieldException {
+        Class<Human> aClass = Human.class;
+
+        /*  Как получить объект типа Class:
+         *  Class<Human> aClass = Human.class;
+         *  aClass = (Class<Human>) human.getClass();
+         *  aClass = (Class<Human>) Class.forName("entity.Human");
+         */
+        Human human = new Human();
+        System.out.println(human);
+
+//        System.out.println("Name->" + human.getClass().getName() +
+//                "  SimpleName->" + human.getClass().getSimpleName() +
+//                "  CanonicalName->" + human.getClass().getCanonicalName());
+
+        System.out.println();
+//        printFields(human);
+//        System.out.println();
+//        changeFields(human);
+//        System.out.println();
+
+        readAnnotation(Human.class);
+
+    }
+
+    private static void printFields(Object obj) throws IllegalAccessException {
+        Field[] fields = obj.getClass().getDeclaredFields();
+        for (Field declaredField : fields) {
+            System.out.print(
+                    Modifier.toString(declaredField.getModifiers()) + " " +
+                            declaredField.getType().getSimpleName() + " " +
+                            declaredField.getName() + ": ");
+            declaredField.setAccessible(true); // доступ к приватному полю
+            System.out.println(declaredField.get(obj));
+        }
+    }
+
+    private static void changeFields(Object obj) throws NoSuchFieldException, IllegalAccessException {
+        System.out.println("OLD " + obj);
+        Field type = obj.getClass().getDeclaredField("type");
+        type.setAccessible(true);
+        type.set(obj, "Пришелец");
+
+        Field money = obj.getClass().getDeclaredField("money");
+        money.setAccessible(true);
+        money.setInt(obj, 500); // final такой final )))
+
+        Field name = obj.getClass().getDeclaredField("name");
+        name.setAccessible(true);
+        name.set(obj, "Коля");
+        printFields(obj);
+        System.out.println("NEW " + obj);
+    }
+
+    private static void readAnnotation(Class aClass) {
+        Annotation[] annotations = aClass.getAnnotations();
+        for (Annotation annotation : annotations) {
+            System.out.println(annotation);
+        }
+
+        HumanAnnotation annotation = (HumanAnnotation) aClass.getAnnotation(HumanAnnotation.class);
+        if (annotation != null) {
+            System.out.println(annotation.name());
+        }
+    }
+
+    /**
+     * @param field - поле с которого надо снять все ограничения.
+     * Warning : поля примитивных типов или строки ,инициализированные значением в месте определения,
+     * а не в конструкторе, Изменить не удасться (зависит от JVM и настроек компилятора)
+     */
+    private static void setAbsolutelyAccessible(Field field) {
+        try {
+            field.setAccessible(true);
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+            modifiersField.setAccessible(true);
+
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+        } catch (NoSuchFieldException | IllegalAccessException e) {/* it's OK */}
+    }
+}
